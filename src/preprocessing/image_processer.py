@@ -149,15 +149,12 @@ class ImageProcessor:
         Get statistics from preprocessed grayscale image for analysis
         
         Returns:
-            Dictionary with grayscale statistics and recommendations
+            Dictionary with grayscale statistics
         """
         stats = {
             'grayscale': {
                 'min': img_gray.min(), 'max': img_gray.max(), 
                 'mean': img_gray.mean(), 'std': img_gray.std()
-            },
-            'recommendations': {
-                'threshold_gray': img_gray.mean() - img_gray.std()  # Suggested threshold for forest (darker)
             }
         }
         
@@ -179,7 +176,7 @@ if __name__ == "__main__":
         normalize=True
     )
     
-    # Get statistics and recommendations
+    # Get statistics
     stats = processor.get_preprocessing_stats(gray_image)
     
     print("=== PREPROCESSING PIPELINE RESULTS ===")
@@ -188,38 +185,24 @@ if __name__ == "__main__":
     print("\n=== GRAYSCALE STATISTICS ===")
     print(f"Grayscale: {stats['grayscale']['min']:.1f} - {stats['grayscale']['max']:.1f} (mean: {stats['grayscale']['mean']:.1f})")
     
-    print("\n=== FOREST CLASSIFICATION RECOMMENDATIONS ===")
-    print(f"Suggested Grayscale threshold (forest = darker): {stats['recommendations']['threshold_gray']:.1f}")
-    print("Logic: Pixels below threshold are likely forest (darker areas)")
-    print("Logic: Pixels above threshold are likely non-forest (brighter areas)")
+    print("\n=== NEXT STEPS ===")
+    print("Use the preprocessed grayscale image with baseline classification methods:")
+    print("from src.baseline_methods.threshold_classification import ThresholdClassifier")
+    print("classifier = ThresholdClassifier()")
+    print("forest_mask, threshold = classifier.classify_forest(gray_image)")
     
-    # Display results
-    fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+    # Display preprocessing results
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
     
     # RGB image
-    axes[0, 0].imshow(rgb_image)
-    axes[0, 0].set_title('Original Image (RGB)')
-    axes[0, 0].axis('off')
+    axes[0].imshow(rgb_image)
+    axes[0].set_title('Original Image (RGB)')
+    axes[0].axis('off')
     
     # Grayscale image
-    axes[0, 1].imshow(gray_image, cmap='gray')
-    axes[0, 1].set_title('Preprocessed Grayscale')
-    axes[0, 1].axis('off')
-    
-    # Histogram of grayscale values
-    axes[1, 0].hist(gray_image.flatten(), bins=50, alpha=0.7, color='gray')
-    axes[1, 0].axvline(stats['recommendations']['threshold_gray'], color='red', linestyle='--', 
-                      label=f'Forest Threshold: {stats["recommendations"]["threshold_gray"]:.1f}')
-    axes[1, 0].set_title('Grayscale Distribution')
-    axes[1, 0].set_xlabel('Pixel Intensity')
-    axes[1, 0].set_ylabel('Frequency')
-    axes[1, 0].legend()
-    
-    # Binary forest mask preview
-    forest_mask = gray_image < stats['recommendations']['threshold_gray']
-    axes[1, 1].imshow(forest_mask, cmap='gray')
-    axes[1, 1].set_title('Forest Mask Preview\n(White = Forest, Black = Non-Forest)')
-    axes[1, 1].axis('off')
+    axes[1].imshow(gray_image, cmap='gray')
+    axes[1].set_title('Preprocessed Grayscale\n(Ready for Classification)')
+    axes[1].axis('off')
     
     plt.tight_layout()
     plt.show()
