@@ -57,6 +57,7 @@ class ImageProcessor:
         """Convert image to grayscale if needed"""
         if len(img.shape) == 2:
             # Already grayscale
+            print('Already in greyscale')
             return img
         else:
             # Convert RGB to grayscale using luminance
@@ -78,22 +79,9 @@ class ImageProcessor:
             
         return clahe.apply(img)
     
-    # important for ML
-    def normalize_image(self, img: np.ndarray, method: str = 'minmax') -> np.ndarray:
+    def normalize_image(self, img: np.ndarray, method: str = 'percentile') -> np.ndarray:
         """Normalize image for consistent processing"""
-        if method == 'minmax':
-            img_min, img_max = img.min(), img.max()
-            if img_max > img_min:
-                return ((img - img_min) / (img_max - img_min) * 255).astype(np.uint8)
-            return img
-        elif method == 'zscore':
-            mean, std = img.mean(), img.std()
-            if std > 0:
-                normalized = (img - mean) / std
-                return ((normalized - normalized.min()) / 
-                       (normalized.max() - normalized.min()) * 255).astype(np.uint8)
-            return img
-        elif method == 'percentile':
+        if method == 'percentile':
             # More robust normalization using percentiles
             p2, p98 = np.percentile(img, (2, 98))
             if p98 > p2:
@@ -103,30 +91,135 @@ class ImageProcessor:
         else:
             return img
     
-    def preprocess_image(self, image_path: Path, crop_coords: Optional[Tuple[int, int, int, int]] = None) -> Tuple[np.ndarray, np.ndarray]:
     
+    def preprocess_pipeline(self, image_path: Path, crop_coords: Optional[Tuple[int, int, int, int]] = None, 
+                           enhance: bool = True, normalize: bool = True) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:    
         """Full preprocessing pipeline, returns tuple:
             HSV_IMAGE, RGB_IMAGE
             HSV for analysis
             RGB for display
+            Greyscale: For texture-based methods
         """
 
-        # load the img in both hsv and rgb
+        # Step 1: Load image in both HSV and RGB
         img_hsv, img_rgb = self.load_image(image_path)
-
+        
+        # Step 2: Crop if coordinates provided
         if crop_coords:
             img_hsv = self.crop_image(img_hsv, crop_coords)
-            img_rgb= self.crop_image(img_rgb, crop_coords)
-
-
+            img_rgb = self.crop_image(img_rgb, crop_coords)
+        
+        # Step 3: Resize to target size
         img_hsv = self.resize_image(img_hsv)
         img_rgb = self.resize_image(img_rgb)
-
-
-
-        return img_hsv, img_rgb
+        
+        # Step 4: Enhancement (CLAHE on Value channel)
+        if enhance:
+            h, s, v = cv2.split(img_hsv)
+            v_enhanced = self.enhance_image(v, method='clahe')
+            img_hsv = cv2.merge([h, s, v_enhanced])
+        
+        # Step 5: Normalization (channel-wise)
+        if normalize:
+            h, s, v = cv2.split(img_hsv)
+            # Normalize each channel with appropriate method
+            h_norm = self.normalize_image(h, method='percentile')
+            s_norm = self.normalize_image(s, method='percentile')
+            v_norm = self.normalize_image(v, method='percentile')
+            
+            img_hsv = cv2.merge([h_norm, s_norm, v_norm])
+        
+        # Step 6: Create grayscale version for texture analysis
+        # Convert RGB to grayscale using luminance weights
+        img_gray = self.to_grayscale(img_rgb)
+        
+        # Apply enhancement to grayscale if requested
+        if enhance:
+            img_gray = self.enhance_image(img_gray, method='clahe')
+        
+        # Normalize grayscale if requested
+        if normalize:
+            img_gray = self.normalize_image(img_gray, method='percentile')
+        
+        return img_hsv, img_rgb, img_gray
         
 
+    def get_preprocessing_stats(self, img_gray: np.ndarray) -> dict:
+        """
+        Get statistics from preprocessed grayscale image for analysis
         
- 
+        Returns:
+            Dictionary with grayscale statistics and recommendations
+        """
+        stats = {
+            'grayscale': {
+                'min': img_gray.min(), 'max': img_gray.max(), 
+                'mean': img_gray.mean(), 'std': img_gray.std()
+            },
+            'recommendations': {
+                'threshold_gray': img_gray.mean() - img_gray.std()  # Suggested threshold for forest (darker)
+            }
+        }
+        
+        return stats
+
+if __name__ == "__main__":
+    # Initialize processor
+    processor = ImageProcessor(target_size=(512, 512))
     
+    # Define crop coordinates (your previous coordinates)
+    crop_coords = (103, 150, 1323, 1720)  # (x1, y1, x2, y2)
+    
+    # Process image with full pipeline
+    image_path = Path('./data/raw/fultonATJ-1-043.jpg')
+    hsv_image, rgb_image, gray_image = processor.preprocess_pipeline(
+        image_path, 
+        crop_coords=crop_coords,
+        enhance=True,
+        normalize=True
+    )
+    
+    # Get statistics and recommendations
+    stats = processor.get_preprocessing_stats(gray_image)
+    
+    print("=== PREPROCESSING PIPELINE RESULTS ===")
+    print(f"Image shape - RGB: {rgb_image.shape}, Gray: {gray_image.shape}")
+    
+    print("\n=== GRAYSCALE STATISTICS ===")
+    print(f"Grayscale: {stats['grayscale']['min']:.1f} - {stats['grayscale']['max']:.1f} (mean: {stats['grayscale']['mean']:.1f})")
+    
+    print("\n=== FOREST CLASSIFICATION RECOMMENDATIONS ===")
+    print(f"Suggested Grayscale threshold (forest = darker): {stats['recommendations']['threshold_gray']:.1f}")
+    print("Logic: Pixels below threshold are likely forest (darker areas)")
+    print("Logic: Pixels above threshold are likely non-forest (brighter areas)")
+    
+    # Display results
+    fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+    
+    # RGB image
+    axes[0, 0].imshow(rgb_image)
+    axes[0, 0].set_title('Original Image (RGB)')
+    axes[0, 0].axis('off')
+    
+    # Grayscale image
+    axes[0, 1].imshow(gray_image, cmap='gray')
+    axes[0, 1].set_title('Preprocessed Grayscale')
+    axes[0, 1].axis('off')
+    
+    # Histogram of grayscale values
+    axes[1, 0].hist(gray_image.flatten(), bins=50, alpha=0.7, color='gray')
+    axes[1, 0].axvline(stats['recommendations']['threshold_gray'], color='red', linestyle='--', 
+                      label=f'Forest Threshold: {stats["recommendations"]["threshold_gray"]:.1f}')
+    axes[1, 0].set_title('Grayscale Distribution')
+    axes[1, 0].set_xlabel('Pixel Intensity')
+    axes[1, 0].set_ylabel('Frequency')
+    axes[1, 0].legend()
+    
+    # Binary forest mask preview
+    forest_mask = gray_image < stats['recommendations']['threshold_gray']
+    axes[1, 1].imshow(forest_mask, cmap='gray')
+    axes[1, 1].set_title('Forest Mask Preview\n(White = Forest, Black = Non-Forest)')
+    axes[1, 1].axis('off')
+    
+    plt.tight_layout()
+    plt.show()
