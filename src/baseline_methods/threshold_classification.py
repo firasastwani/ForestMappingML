@@ -191,7 +191,7 @@ class ThresholdClassifier:
         plt.show()
     
 
-# Comprehensive testing and demonstration
+# Basic testing and demonstration
 if __name__ == "__main__":
     import sys
     from pathlib import Path
@@ -202,14 +202,11 @@ if __name__ == "__main__":
     try:
         from src.preprocessing.image_processer import ImageProcessor
         
-        print("=== THRESHOLD CLASSIFICATION TESTING ===")
-        print("Testing baseline forest classification methods\n")
-        
         # Initialize components
         processor = ImageProcessor(target_size=(512, 512))
         classifier = ThresholdClassifier()
         
-        # Test with different images
+        # Test with first available image
         test_images = [
             './data/raw/fultonATJ-1-043.jpg',
             './data/raw/fultonATJ-2-009.jpg',
@@ -218,101 +215,46 @@ if __name__ == "__main__":
             './data/raw/fultonATJ-3A-023.jpg'
         ]
         
-        crop_coords = (103, 150, 1323, 1720)  # Your standard crop coordinates
+        image_path = None
+        for img_path in test_images:
+            p = Path(img_path)
+            if p.exists():
+                image_path = p
+                break
         
-        for i, image_path in enumerate(test_images):
-            image_path = Path(image_path)
-            
-            if not image_path.exists():
-                print(f"⚠️  Skipping {image_path.name} - file not found")
-                continue
-                
-            print(f"\n{'='*60}")
-            print(f"TESTING IMAGE {i+1}: {image_path.name}")
-            print(f"{'='*60}")
-            
-            try:
-                # Step 1: Preprocess image
-                print("Step 1: Preprocessing image...")
-                _, _, gray_image = processor.preprocess_pipeline(
-                    image_path, 
-                    crop_coords=crop_coords,
-                    enhance=True,
-                    normalize=True
-                )
-                
-                # Step 2: Test different threshold methods
-                print("Step 2: Testing threshold methods...")
-                results = classifier.evaluate_threshold_methods(gray_image)
-                
-                # Print method comparison
-                print("\n--- THRESHOLD METHOD COMPARISON ---")
-                for method, result in results.items():
-                    print(f"{method.upper():>12}: Threshold={result['threshold']:6.1f}, "
-                          f"Forest={result['forest_percentage']:5.1f}%, "
-                          f"Non-forest={result['non_forest_percentage']:5.1f}%")
-                
-                # Step 3: Test individual classification
-                print("\nStep 3: Testing individual classification...")
-                forest_mask, threshold = classifier.classify_forest(gray_image, method='mean_std')
-                
-                print(f"Mean-Std Method Results:")
-                print(f"  Threshold: {threshold:.1f}")
-                print(f"  Forest pixels: {np.sum(forest_mask):,}")
-                print(f"  Non-forest pixels: {np.sum(~forest_mask):,}")
-                print(f"  Forest percentage: {(np.sum(forest_mask) / gray_image.size) * 100:.1f}%")
-                
-                # Step 4: Visualize results
-                print("\nStep 4: Generating visualizations...")
-                classifier.visualize_results(gray_image, forest_mask, threshold, 'Mean-Std')
-
-
-                #Step 5: Compare all methods visually
-                print("\nStep 5: Comparing all methods visually...")
-                classifier.compare_methods(gray_image)
-                
-                print(f"\n✅ Successfully tested {image_path.name}")
-                
-            except Exception as e:
-                print(f"❌ Error testing {image_path.name}: {str(e)}")
-                continue
+        if image_path is None:
+            print("No demo image found. Please add a raw image to data/raw.")
+            sys.exit(0)
         
-        print(f"\n{'='*60}")
-        print("TESTING COMPLETE")
-        print(f"{'='*60}")
+        # Standard crop
+        crop_coords = (103, 150, 1323, 1720)
         
-        # Additional functionality tests
-        print("\n--- ADDITIONAL FUNCTIONALITY TESTS ---")
+        # Preprocess image
+        _, _, gray_image = processor.preprocess_pipeline(
+            image_path, crop_coords=crop_coords
+        )
         
-        # Test with manual threshold
-        print("\n1. Testing manual threshold...")
-        test_image_path = Path('./data/raw/fultonATJ-2-009.jpg')
-        if test_image_path.exists():
-            _, _, test_gray = processor.preprocess_pipeline(test_image_path, crop_coords)
-            manual_threshold = 100.0
-            forest_mask_manual, _ = classifier.classify_forest(test_gray, threshold=manual_threshold)
-            forest_percent_manual = (np.sum(forest_mask_manual) / test_gray.size) * 100
-            print(f"   Manual threshold {manual_threshold}: {forest_percent_manual:.1f}% forest")
+        # Test threshold methods
+        results = classifier.evaluate_threshold_methods(gray_image)
         
-        # Test threshold calculation methods
-        print("\n2. Testing threshold calculation methods...")
-        if test_image_path.exists():
-            _, _, test_gray = processor.preprocess_pipeline(test_image_path, crop_coords)
-            for method in classifier.threshold_methods:
-                threshold = classifier.calculate_threshold(test_gray, method)
-                print(f"   {method}: {threshold:.1f}")
+        # Print results
+        print("Threshold Method Comparison:")
+        for method, result in results.items():
+            print(f"{method}: {result['forest_percentage']:.1f}% forest (threshold: {result['threshold']:.1f})")
         
-        print("\n🎉 All tests completed successfully!")
-        print("\nNext steps:")
-        print("- Use these results to choose the best threshold method")
-        print("- Implement additional baseline methods (clustering, edge detection)")
-        print("- Create training data for machine learning classifier")
+        # Test individual classification
+        forest_mask, threshold = classifier.classify_forest(gray_image, method='mean_std')
+        forest_pct = (np.sum(forest_mask) / gray_image.size) * 100
+        print(f"Mean-Std Method: {forest_pct:.1f}% forest")
+        
+        # Visualize results
+        classifier.visualize_results(gray_image, forest_mask, threshold, 'Mean-Std')
+        classifier.compare_methods(gray_image)
         
     except ImportError as e:
-        print(f"❌ Import error: {e}")
+        print(f"Import error: {e}")
         print("Make sure you're running from the project root directory")
-        print("and that the preprocessing module is available")
         
     except Exception as e:
-        print(f"❌ Unexpected error: {e}")
+        print(f"Error: {e}")
         print("Check that image files exist and paths are correct")
