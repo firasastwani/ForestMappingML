@@ -253,10 +253,11 @@ if __name__ == "__main__":
         
         # Test with first available image
         test_images = [
-            './data/raw/fultonATJ-3A-023.jpg',
-            './data/raw/fultonIndex6.jpg',
-            './data/raw/fultonIndex12.jpg', 
-            './data/raw/fultonATJ-1-043.jpg'
+            './data/raw/fultonATJ-1-043.jpg',
+            './data/raw/fultonATJ-2-009.jpg',
+            './data/raw/fultonATJ-2-014.jpg',
+            './data/raw/fultonATJ-2-016.jpg',
+            './data/raw/fultonATJ-3A-023.jpg'
         ]
         
         image_path = None

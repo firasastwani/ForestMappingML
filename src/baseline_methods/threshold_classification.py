@@ -211,9 +211,11 @@ if __name__ == "__main__":
         
         # Test with different images
         test_images = [
-            './data/raw/fultonIndex6.jpg',
-            './data/raw/fultonIndex12.jpg', 
-            './data/raw/fultonATJ-1-043.jpg'
+            './data/raw/fultonATJ-1-043.jpg',
+            './data/raw/fultonATJ-2-009.jpg',
+            './data/raw/fultonATJ-2-014.jpg',
+            './data/raw/fultonATJ-2-016.jpg',
+            './data/raw/fultonATJ-3A-023.jpg'
         ]
         
         crop_coords = (103, 150, 1323, 1720)  # Your standard crop coordinates
@@ -284,7 +286,7 @@ if __name__ == "__main__":
         
         # Test with manual threshold
         print("\n1. Testing manual threshold...")
-        test_image_path = Path('./data/raw/fultonIndex6.jpg')
+        test_image_path = Path('./data/raw/fultonATJ-2-009.jpg')
         if test_image_path.exists():
             _, _, test_gray = processor.preprocess_pipeline(test_image_path, crop_coords)
             manual_threshold = 100.0
