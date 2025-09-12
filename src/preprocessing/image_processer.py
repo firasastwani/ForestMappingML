@@ -160,6 +160,28 @@ class ImageProcessor:
         
         return stats
 
+    def preprocess_for_texture_analysis(self, image_path: Path, 
+                                      crop_coords: Optional[Tuple[int, int, int, int]] = None) -> np.ndarray:
+        """
+        Preprocess image specifically for texture-based classification methods
+        
+        Args:
+            image_path: Path to the image file
+            crop_coords: Optional crop coordinates (x1, y1, x2, y2)
+            
+        Returns:
+            Preprocessed grayscale image ready for texture analysis
+        """
+        # Use the existing pipeline but only return the grayscale image
+        _, _, gray_image = self.preprocess_pipeline(
+            image_path, 
+            crop_coords=crop_coords, 
+            enhance=True, 
+            normalize=True
+        )
+        
+        return gray_image
+
 if __name__ == "__main__":
     # Initialize processor
     processor = ImageProcessor(target_size=(512, 512))

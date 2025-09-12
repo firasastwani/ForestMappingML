@@ -16,6 +16,7 @@ class TextureClassifier:
     
     def __init__(self):
         self.texture_methods = ['sobel', 'canny']
+        self.processor = None  # Will be set when needed
     
     def detect_edges(self, image: np.ndarray, method: str = 'sobel') -> np.ndarray:
         """
@@ -205,6 +206,36 @@ class TextureClassifier:
         plt.tight_layout()
         plt.show()
 
+    def classify_from_path(self, image_path, crop_coords: Optional[Tuple[int, int, int, int]] = None, 
+                          method: str = 'sobel') -> Tuple[np.ndarray, float, np.ndarray]:
+        """
+        Complete pipeline: preprocess image and classify forest areas
+        
+        Args:
+            image_path: Path to the image file
+            crop_coords: Optional crop coordinates (x1, y1, x2, y2)
+            method: 'sobel' or 'canny'
+            
+        Returns:
+            Tuple of (forest_mask, threshold, preprocessed_image)
+        """
+        from pathlib import Path
+        from src.preprocessing.image_processer import ImageProcessor
+        
+        # Initialize processor if not already done
+        if self.processor is None:
+            self.processor = ImageProcessor(target_size=(512, 512))
+        
+        # Preprocess image for texture analysis
+        gray_image = self.processor.preprocess_for_texture_analysis(
+            Path(image_path), crop_coords=crop_coords
+        )
+        
+        # Classify forest areas
+        forest_mask, threshold = self.classify_forest(gray_image, method)
+        
+        return forest_mask, threshold, gray_image
+
 
 # Basic testing and demonstration
 if __name__ == "__main__":
@@ -217,9 +248,7 @@ if __name__ == "__main__":
     try:
         from src.preprocessing.image_processer import ImageProcessor
         
-        
-        # Initialize components
-        processor = ImageProcessor(target_size=(512, 512))
+        # Initialize classifier (it will handle its own processor)
         classifier = TextureClassifier()
         
         # Test with first available image
@@ -241,22 +270,20 @@ if __name__ == "__main__":
             print("No demo image found. Please add a raw image to data/raw.")
             sys.exit(0)
         
-        
         # Standard crop
         crop_coords = (103, 150, 1323, 1720)
         
-        # Preprocess to grayscale
-        _, _, gray_image = processor.preprocess_pipeline(
-            image_path, crop_coords=crop_coords, enhance=True, normalize=True
+        # Test Sobel method using the complete pipeline
+        sobel_mask, sobel_threshold, gray_image = classifier.classify_from_path(
+            image_path, crop_coords=crop_coords, method='sobel'
         )
-        
-        # Test Sobel method
         sobel_edges = classifier.detect_edges(gray_image, 'sobel')
-        sobel_mask, sobel_threshold = classifier.classify_forest(gray_image, 'sobel')
         
-        # Test Canny method
+        # Test Canny method using the complete pipeline
+        canny_mask, canny_threshold, _ = classifier.classify_from_path(
+            image_path, crop_coords=crop_coords, method='canny'
+        )
         canny_edges = classifier.detect_edges(gray_image, 'canny')
-        canny_mask, canny_threshold = classifier.classify_forest(gray_image, 'canny')
         
         # Visualize Sobel results
         classifier.visualize_results(gray_image, sobel_mask, sobel_edges, sobel_threshold, 'Sobel')
