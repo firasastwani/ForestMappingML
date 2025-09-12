@@ -1,11 +1,16 @@
 # ForestMappingML
+
 # AI@UGA Forest Mapping Project
 
 A machine learning pipeline for forest vs. non-forest classification using historic aerial imagery from Fulton County, Georgia. This project implements multiple classification approaches including baseline thresholding methods, texture-based filtering, and a Random Forest classifier to map forest areas from 1938 aerial photography.
 
+## Method Comparison Results
+
+![Method Comparison](results/method_comparison.png)
+
+_Comprehensive comparison of all classification methods applied to 1938 Fulton County aerial photography. The visualization shows original image, preprocessing steps, baseline thresholding methods, texture-based approaches, and machine learning results with forest percentages for each method._
 
 ## Project Overview
-
 
 **Key Objectives:**
 
@@ -174,7 +179,6 @@ The preprocessing pipeline was designed to enhance forest classification accurac
 
 **Sample Collection**: 15-20 samples each for forest and non-forest classes
 
-
 ## Results & Analysis
 
 ### Performance Comparison
@@ -208,7 +212,6 @@ Comprehensive error handling implemented throughout:
 - Model training validation
 - Graceful degradation for missing images
 
-
 ## Dependencies
 
 - OpenCV (`cv2`)
@@ -217,9 +220,7 @@ Comprehensive error handling implemented throughout:
 - scikit-learn
 - Pathlib
 
-
 ## Future Improvements
-
 
 ### Scalability Improvements
 
