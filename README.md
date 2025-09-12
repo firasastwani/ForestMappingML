@@ -26,9 +26,8 @@ _Comprehensive comparison of all classification methods applied to 1938 Fulton C
 **Georgia Aerial Photography Collection - Fulton County, 1938**
 
 - Geographic Focus: Fulton County, Atlanta area (selected for local relevance)
-- Temporal Scope: 1938 aerial photography index
+- Scope: 1938 aerial photography index
 - Image Specifications: 1526 x 1791 pixels per full image
-- Selected Indices: 6, 12, and 15 (consistent sensor characteristics)
 
 ### Data Selection Rationale
 
