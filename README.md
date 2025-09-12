@@ -3,19 +3,6 @@
 
 A machine learning pipeline for forest vs. non-forest classification using historic aerial imagery from Fulton County, Georgia. This project implements multiple classification approaches including baseline thresholding methods, texture-based filtering, and a Random Forest classifier to map forest areas from 1938 aerial photography.
 
-## Table of Contents
-
-- [Project Overview](#project-overview)
-- [Dataset](#dataset)
-- [Methodology](#methodology)
-  - [Preprocessing Pipeline](#preprocessing-pipeline)
-  - [Baseline Methods](#baseline-methods)
-  - [Machine Learning Approach](#machine-learning-approach)
-- [Technical Implementation](#technical-implementation)
-- [Results & Analysis](#results--analysis)
-- [Setup & Usage](#setup--usage)
-- [Project Structure](#project-structure)
-- [Future Improvements](#future-improvements)
 
 ## Project Overview
 
